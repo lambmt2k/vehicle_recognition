@@ -239,7 +239,7 @@ def detect(opt):
 #                cv2.line(im0, start_point1, end_point1, (0,255,0), 1, cv2.LINE_AA)
 #                cv2.line(im0, start_point2, end_point2, (0,255,0), 1, cv2.LINE_AA)
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(im0, 'Pham Hai Duong DKCN17 MTA ', (10,20), font,0.7, color_green, 1, cv2.LINE_AA)
+                cv2.putText(im0, 'Vehicle Recognition', (10,20), font,0.7, color_green, 1, cv2.LINE_AA)
                 cv2.putText(im0, 'Total: ' + str(total), (10,40), font,0.7, color_green, 1, cv2.LINE_AA)
                 cv2.putText(im0, 'Car: ' + str(num_car), (10,60), font,0.7, color_green, 1, cv2.LINE_AA)
                 cv2.putText(im0, 'Truck: ' + str(num_truck), (10,80), font,0.7, color_green, 1, cv2.LINE_AA)
@@ -320,7 +320,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--yolo_model', nargs='+', type=str, default='yolov5n.pt', help='model.pt path(s)')
     parser.add_argument('--deep_sort_model', type=str, default='osnet_x0_25')
-    parser.add_argument('--source', type=str, default='videos/Traffic.mp4', help='source')  # file/folder, 0 for webcam
+    parser.add_argument('--source', type=str, default='Traffic.mp4', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[480], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
