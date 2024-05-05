@@ -21,6 +21,12 @@ import torch.backends.cudnn as cudnn
 import numpy as np
 import math
 from random import randint
+import tkinter as tk
+from tkinter import filedialog
+from PIL import ImageTk, Image
+import argparse
+import cv2
+import torch
 
 from yolov5.models.experimental import attempt_load
 from yolov5.utils.downloads import attempt_download
@@ -239,7 +245,7 @@ def detect(opt):
 #                cv2.line(im0, start_point1, end_point1, (0,255,0), 1, cv2.LINE_AA)
 #                cv2.line(im0, start_point2, end_point2, (0,255,0), 1, cv2.LINE_AA)
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(im0, 'Vehicle Recognition', (10,20), font,0.7, color_green, 1, cv2.LINE_AA)
+                cv2.putText(im0, 'Count Vehicle', (10,20), font,0.7, color_green, 1, cv2.LINE_AA)
                 cv2.putText(im0, 'Total: ' + str(total), (10,40), font,0.7, color_green, 1, cv2.LINE_AA)
                 cv2.putText(im0, 'Car: ' + str(num_car), (10,60), font,0.7, color_green, 1, cv2.LINE_AA)
                 cv2.putText(im0, 'Truck: ' + str(num_truck), (10,80), font,0.7, color_green, 1, cv2.LINE_AA)
@@ -315,36 +321,85 @@ def count_vehicles(w_obj,h_obj,w,h,id,name):
                 listId.append(id)
     total = num_truck + num_car + num_bus + num_bicycle + num_walker + num_motor
 
+def import_video():
+    filename = filedialog.askopenfilename()
+    entry_video.delete(0, tk.END)
+    entry_video.insert(0, filename)
 
+def run_detection():
+    video_path = entry_video.get()
+    if video_path:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--yolo_model', nargs='+', type=str, default='yolov5n.pt', help='model.pt path(s)')
+        parser.add_argument('--deep_sort_model', type=str, default='osnet_x0_25')
+        parser.add_argument('--source', type=str, default='Traffic.mp4', help='source')  # file/folder, 0 for webcam
+        parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
+        parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[480], help='inference size h,w')
+        parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
+        parser.add_argument('--iou-thres', type=float, default=0.5, help='IOU threshold for NMS')
+        parser.add_argument('--fourcc', type=str, default='mp4v', help='output video codec (verify ffmpeg support)')
+        parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+        parser.add_argument('--show-vid', action='store_false', help='display tracking video results')
+        parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
+        parser.add_argument('--save-txt', action='store_true', help='save MOT compliant results to *.txt')
+        # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
+        parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 16 17')
+        parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
+        parser.add_argument('--augment', action='store_true', help='augmented inference')
+        parser.add_argument('--evaluate', action='store_true', help='augmented inference')
+        parser.add_argument("--config_deepsort", type=str, default="deep_sort/configs/deep_sort.yaml")
+        parser.add_argument("--half", action="store_true", help="use FP16 half-precision inference")
+        parser.add_argument('--visualize', action='store_true', help='visualize features')
+        parser.add_argument('--max-det', type=int, default=1000, help='maximum detection per image')
+        parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
+        parser.add_argument('--project', default=ROOT / 'runs/track', help='save results to project/name')
+        parser.add_argument('--name', default='exp', help='save results to project/name')
+        parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
+        opt = parser.parse_args()
+        opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
+        opt.source = video_path
+        with torch.no_grad():
+            detect(opt) 
+    
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo_model', nargs='+', type=str, default='yolov5n.pt', help='model.pt path(s)')
-    parser.add_argument('--deep_sort_model', type=str, default='osnet_x0_25')
-    parser.add_argument('--source', type=str, default='Traffic.mp4', help='source')  # file/folder, 0 for webcam
-    parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[480], help='inference size h,w')
-    parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.5, help='IOU threshold for NMS')
-    parser.add_argument('--fourcc', type=str, default='mp4v', help='output video codec (verify ffmpeg support)')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--show-vid', action='store_false', help='display tracking video results')
-    parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
-    parser.add_argument('--save-txt', action='store_true', help='save MOT compliant results to *.txt')
-    # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 16 17')
-    parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
-    parser.add_argument('--evaluate', action='store_true', help='augmented inference')
-    parser.add_argument("--config_deepsort", type=str, default="deep_sort/configs/deep_sort.yaml")
-    parser.add_argument("--half", action="store_true", help="use FP16 half-precision inference")
-    parser.add_argument('--visualize', action='store_true', help='visualize features')
-    parser.add_argument('--max-det', type=int, default=1000, help='maximum detection per image')
-    parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
-    parser.add_argument('--project', default=ROOT / 'runs/track', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    opt = parser.parse_args()
-    opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
+    # Create a Tkinter window
+    window = tk.Tk()
+    window.title("Vehicle Detection")
 
-    with torch.no_grad():
-        detect(opt)
+    # Banner
+    banner_image = Image.open("banner.jpg")
+    banner_photo = ImageTk.PhotoImage(banner_image)
+    banner_label = tk.Label(window, image=banner_photo)
+    banner_label.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+    
+    # Group information
+    info_frame = tk.Frame(window, bg="white", bd=1, relief=tk.SOLID)
+    info_frame.grid(row=1, column=0, padx=10, pady=10)
+
+    info_label = tk.Label(info_frame, text="Thông tin nhóm:", bg="white", fg="black")
+    info_label.pack(padx=10, pady=5)
+
+    info_text = tk.Text(info_frame, height=5, width=30)
+    info_text.pack(padx=10, pady=5)
+    info_text.insert(tk.END, "Bùi Mạc Tùng Lâm - 18110139\n")
+    info_text.insert(tk.END, "Phạm Anh Quốc - 20116325\n")
+    info_text.insert(tk.END, "Nguyễn Trúc An - 20110087\n")
+    info_text.insert(tk.END, "Lê Hoàng Tuấn - 18110226\n")
+
+    #video import and run button
+    video_frame = tk.Frame(window, bg="white", bd=1, relief=tk.SOLID)
+    video_frame.grid(row=1, column=1, padx=10, pady=10)
+    # Video import form
+    video_label = tk.Label(video_frame, text="Video File Path:", bg="white", fg="black")
+    video_label.grid(row=0, column=0, padx=10, pady=10)
+    entry_video = tk.Entry(video_frame, width=50)
+    entry_video.grid(row=0, column=1, padx=10, pady=10)
+    import_button = tk.Button(video_frame, text="Import Video", command=import_video)
+    import_button.grid(row=0, column=2, padx=10, pady=10)
+
+    # Run button
+    run_button = tk.Button(video_frame, text="Run Detection", command=run_detection)
+    run_button.grid(row=1, column=1, padx=10, pady=10)
+
+    # Function to keep the window open
+    window.mainloop()
